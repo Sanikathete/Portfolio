@@ -1,0 +1,57 @@
+symbol,company_name,sector,industry,exchange,country
+APD,"Air Products and Chemicals, Inc",Basic Materials,Specialty Chemicals,NYQ,United States
+ECL,Ecolab Inc.,Basic Materials,Specialty Chemicals,NYQ,United States
+FCX,"Freeport-McMoRan, Inc.",Basic Materials,Copper,NYQ,United States
+LIN,Linde plc,Basic Materials,Specialty Chemicals,NMS,United Kingdom
+NEM,Newmont Corporation,Basic Materials,Gold,NYQ,United States
+DIS,Walt Disney Company (The),Communication Services,Entertainment,NYQ,United States
+GOOGL,Alphabet Inc.,Communication Services,Internet Content & Information,NMS,United States
+META,"Meta Platforms, Inc.",Communication Services,Internet Content & Information,NMS,United States
+NFLX,"Netflix, Inc.",Communication Services,Entertainment,NMS,United States
+TMUS,"T-Mobile US, Inc.",Communication Services,Telecom Services,NMS,United States
+AMZN,"Amazon.com, Inc.",Consumer Cyclical,Internet Retail,NMS,United States
+HD,"Home Depot, Inc. (The)",Consumer Cyclical,Home Improvement Retail,NYQ,United States
+NKE,"Nike, Inc.",Consumer Cyclical,Footwear & Accessories,NYQ,United States
+SBUX,Starbucks Corporation,Consumer Cyclical,Restaurants,NMS,United States
+TSLA,"Tesla, Inc.",Consumer Cyclical,Auto Manufacturers,NMS,United States
+COST,Costco Wholesale Corporation,Consumer Defensive,Discount Stores,NMS,United States
+KO,Coca-Cola Company (The),Consumer Defensive,Beverages - Non-Alcoholic,NYQ,United States
+PEP,"Pepsico, Inc.",Consumer Defensive,Beverages - Non-Alcoholic,NMS,United States
+PG,Procter & Gamble Company (The),Consumer Defensive,Household & Personal Products,NYQ,United States
+WMT,Walmart Inc.,Consumer Defensive,Discount Stores,NMS,United States
+COP,ConocoPhillips,Energy,Oil & Gas E&P,NYQ,United States
+CVX,Chevron Corporation,Energy,Oil & Gas Integrated,NYQ,United States
+EOG,"EOG Resources, Inc.",Energy,Oil & Gas E&P,NYQ,United States
+SLB,SLB Limited,Energy,Oil & Gas Equipment & Services,NYQ,United States
+XOM,Exxon Mobil Corporation,Energy,Oil & Gas Integrated,NYQ,United States
+BAC,Bank of America Corporation,Financial Services,Banks - Diversified,NYQ,United States
+GS,"Goldman Sachs Group, Inc. (The)",Financial Services,Capital Markets,NYQ,United States
+JPM,JP Morgan Chase & Co.,Financial Services,Banks - Diversified,NYQ,United States
+MS,Morgan Stanley,Financial Services,Capital Markets,NYQ,United States
+WFC,Wells Fargo & Company,Financial Services,Banks - Diversified,NYQ,United States
+ABBV,AbbVie Inc.,Healthcare,Drug Manufacturers - General,NYQ,United States
+JNJ,Johnson & Johnson,Healthcare,Drug Manufacturers - General,NYQ,United States
+MRK,"Merck & Company, Inc.",Healthcare,Drug Manufacturers - General,NYQ,United States
+PFE,"Pfizer, Inc.",Healthcare,Drug Manufacturers - General,NYQ,United States
+UNH,UnitedHealth Group Incorporated,Healthcare,Healthcare Plans,NYQ,United States
+CAT,"Caterpillar, Inc.",Industrials,Farm & Heavy Construction Machinery,NYQ,United States
+DE,Deere & Company,Industrials,Farm & Heavy Construction Machinery,NYQ,United States
+GE,GE Aerospace,Industrials,Aerospace & Defense,NYQ,United States
+HON,Honeywell International Inc.,Industrials,Conglomerates,NMS,United States
+UPS,"United Parcel Service, Inc.",Industrials,Integrated Freight & Logistics,NYQ,United States
+AMT,American Tower Corporation (REI,Real Estate,REIT - Specialty,NYQ,United States
+CCI,Crown Castle Inc.,Real Estate,REIT - Specialty,NYQ,United States
+EQIX,"Equinix, Inc.",Real Estate,REIT - Specialty,NMS,United States
+PLD,"Prologis, Inc.",Real Estate,REIT - Industrial,NYQ,United States
+SPG,"Simon Property Group, Inc.",Real Estate,REIT - Retail,NYQ,United States
+AAPL,Apple Inc.,Technology,Consumer Electronics,NMS,United States
+ADBE,Adobe Inc.,Technology,Software - Application,NMS,United States
+CRM,"Salesforce, Inc.",Technology,Software - Application,NYQ,United States
+MSFT,Microsoft Corporation,Technology,Software - Infrastructure,NMS,United States
+NVDA,NVIDIA Corporation,Technology,Semiconductors,NMS,United States
+ORCL,Oracle Corporation,Technology,Software - Infrastructure,NYQ,United States
+AEP,American Electric Power Company,Utilities,Utilities - Regulated Electric,NMS,United States
+DUK,Duke Energy Corporation (Holdin,Utilities,Utilities - Regulated Electric,NYQ,United States
+EXC,Exelon Corporation,Utilities,Utilities - Regulated Electric,NMS,United States
+NEE,"NextEra Energy, Inc.",Utilities,Utilities - Regulated Electric,NYQ,United States
+SO,Southern Company (The),Utilities,Utilities - Regulated Electric,NYQ,United States

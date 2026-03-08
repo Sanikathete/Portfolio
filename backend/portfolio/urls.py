@@ -1,6 +1,20 @@
 from django.urls import path
+from .api_views import (
+    AddStockAPIView,
+    CountryListAPIView,
+    PortfolioAnalyticsAPIView,
+    SectorByCountryAPIView,
+    StockBySectorAPIView,
+)
 from .views import (
+    SignupView,
+    LoginView,
+    LogoutView,
+    ForgotPasswordView,
+    MeView,
     StockListCreateView,
+    StockUniverseRebuildView,
+    PortfolioListCreateView,
     PortfolioView,
     PortfolioAddStockView,
     PortfolioRemoveStockView,
@@ -8,12 +22,36 @@ from .views import (
     SectorListView,
     StocksBySectorView,
     StockDetailsView,
+    StockForecastView,
+    MetalsAnalysisView,
+    BitcoinAnalysisView,
+    AssetComparisonView,
     PortfolioAnalyticsView,
+    PortfolioMLAnalysisView,
 )
 
 
 urlpatterns = [
+    path("countries/", CountryListAPIView.as_view(), name="countries"),
+    path("sectors/<int:country_id>/", SectorByCountryAPIView.as_view(), name="sectors-by-country"),
+    path("stocks/<int:sector_id>/", StockBySectorAPIView.as_view(), name="stocks-by-sector-id"),
+    path("add-stock/", AddStockAPIView.as_view(), name="add-stock"),
+    path(
+        "portfolio/<int:portfolio_id>/analytics/",
+        PortfolioAnalyticsAPIView.as_view(),
+        name="portfolio-analytics-by-id",
+    ),
+    path("signup/", SignupView.as_view(), name="signup"),
+    path("login/", LoginView.as_view(), name="login"),
+    path("forgot-password/", ForgotPasswordView.as_view(), name="forgot-password"),
+    path("logout/", LogoutView.as_view(), name="logout"),
+    path("me/", MeView.as_view(), name="me"),
     path("stocks/", StockListCreateView.as_view(), name="stocks"),
+    path(
+        "stocks/rebuild-universe/",
+        StockUniverseRebuildView.as_view(),
+        name="stocks-rebuild-universe",
+    ),
     path("sectors/", SectorListView.as_view(), name="sectors"),
     path(
         "stocks/by-sector/<str:sector_name>/",
@@ -25,9 +63,19 @@ urlpatterns = [
         StockDetailsView.as_view(),
         name="stock-details",
     ),
+    path(
+        "stocks/forecast/<str:symbol>/",
+        StockForecastView.as_view(),
+        name="stock-forecast",
+    ),
+    path("analysis/metals/", MetalsAnalysisView.as_view(), name="metals-analysis"),
+    path("analysis/bitcoin/", BitcoinAnalysisView.as_view(), name="bitcoin-analysis"),
+    path("analysis/compare/", AssetComparisonView.as_view(), name="asset-comparison"),
     path("portfolio/", PortfolioView.as_view(), name="portfolio"),
+    path("portfolios/", PortfolioListCreateView.as_view(), name="portfolios"),
     path("portfolio/add/", PortfolioAddStockView.as_view(), name="portfolio-add"),
     path("portfolio/remove/", PortfolioRemoveStockView.as_view(), name="portfolio-remove"),
     path("portfolio/total/", PortfolioTotalView.as_view(), name="portfolio-total"),
     path("portfolio/analytics/", PortfolioAnalyticsView.as_view(), name="portfolio-analytics"),
+    path("portfolio/analysis/", PortfolioMLAnalysisView.as_view(), name="portfolio-ml-analysis"),
 ]

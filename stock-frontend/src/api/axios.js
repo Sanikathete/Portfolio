@@ -1,18 +1,26 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api"
+  baseURL: "http://localhost:8000/api",
+  withCredentials: true
 });
 
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const path = typeof window !== "undefined" ? window.location.pathname : "";
+    const authPath = path === "/login";
+    const authRequest = ["/login/", "/signup/", "/forgot-password/", "/logout/"].some((fragment) =>
+      String(error?.config?.url || "").includes(fragment)
+    );
+
+    if (status === 401 && !authPath && !authRequest && typeof window !== "undefined") {
+      window.location.replace("/login");
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
+
+    return Promise.reject(error);
+  }
 );
 
 export default api;

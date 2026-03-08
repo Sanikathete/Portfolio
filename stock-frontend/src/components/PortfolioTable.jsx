@@ -1,6 +1,6 @@
-function PortfolioTable({ items, totalValue, onRemove }) {
+function PortfolioTable({ items, totalValue, onRemove, formatMoney = (value) => `$${Number(value || 0).toFixed(2)}` }) {
   return (
-    <div className="table-wrap">
+    <div className="table-wrap premium-table">
       <table>
         <thead>
           <tr>
@@ -20,7 +20,7 @@ function PortfolioTable({ items, totalValue, onRemove }) {
           {items.length === 0 ? (
             <tr>
               <td colSpan="10" className="center-text">
-                No stocks in portfolio.
+                No holdings yet. Start building your first allocation.
               </td>
             </tr>
           ) : (
@@ -29,21 +29,18 @@ function PortfolioTable({ items, totalValue, onRemove }) {
                 <td>{item.stock.symbol}</td>
                 <td>{item.stock.company_name}</td>
                 <td>{item.quantity}</td>
-                <td>${Number(item.buy_price).toFixed(2)}</td>
-                <td>${Number(item.current_price).toFixed(2)}</td>
+                <td>{formatMoney(item.buy_price)}</td>
+                <td>{formatMoney(item.current_price)}</td>
                 <td>{Number(item.pe_ratio).toFixed(2)}</td>
                 <td className={Number(item.discount_percent) >= 0 ? "profit-text" : "loss-text"}>
                   {Number(item.discount_percent).toFixed(2)}%
                 </td>
                 <td className={Number(item.profit_loss) >= 0 ? "profit-text" : "loss-text"}>
-                  ${Number(item.profit_loss).toFixed(2)}
+                  {formatMoney(item.profit_loss)}
                 </td>
-                <td>${Number(item.position_value).toFixed(2)}</td>
+                <td>{formatMoney(item.position_value)}</td>
                 <td>
-                  <button
-                    className="danger-btn"
-                    onClick={() => onRemove(item.stock.id)}
-                  >
+                  <button className="ghost-danger-btn" onClick={() => onRemove(item.stock.id)}>
                     Remove
                   </button>
                 </td>
@@ -52,7 +49,7 @@ function PortfolioTable({ items, totalValue, onRemove }) {
           )}
         </tbody>
       </table>
-      <p className="total">Total Portfolio Value: ${Number(totalValue || 0).toFixed(2)}</p>
+      <p className="total">Total Portfolio Value: {formatMoney(totalValue || 0)}</p>
     </div>
   );
 }

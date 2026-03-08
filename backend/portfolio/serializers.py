@@ -76,8 +76,8 @@ class PortfolioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Portfolio
-        fields = ["id", "user", "stocks", "total_value"]
-        read_only_fields = ["id", "user", "stocks", "total_value"]
+        fields = ["id", "name", "user", "stocks", "total_value"]
+        read_only_fields = ["id", "name", "user", "stocks", "total_value"]
 
     def get_total_value(self, obj):
         total = 0.0
@@ -85,3 +85,11 @@ class PortfolioSerializer(serializers.ModelSerializer):
             market = get_stock_data(holding.stock.symbol, fallback_sector=holding.stock.sector)
             total += market.get("current_price", holding.stock.price) * holding.quantity
         return round(total, 2)
+
+
+class PortfolioSummarySerializer(serializers.ModelSerializer):
+    holdings_count = serializers.IntegerField(source="holdings.count", read_only=True)
+
+    class Meta:
+        model = Portfolio
+        fields = ["id", "name", "holdings_count"]

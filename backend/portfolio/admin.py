@@ -22,7 +22,8 @@ class PortfolioStockInline(admin.TabularInline):
 
 @admin.register(Portfolio)
 class PortfolioAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "display_total_value")
+    list_display = ("id", "user", "name", "display_total_value")
+    search_fields = ("user__username", "name")
     inlines = [PortfolioStockInline]
 
     def display_total_value(self, obj):

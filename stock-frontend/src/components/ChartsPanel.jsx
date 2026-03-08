@@ -30,6 +30,8 @@ function ChartsPanel({ analytics, portfolioStocks }) {
     symbol: item.stock.symbol,
     profit_loss: Number(item.profit_loss || 0)
   }));
+  const discountData = analytics?.discount_distribution || [];
+  const opportunityData = analytics?.opportunity_distribution || [];
 
   return (
     <div className="charts-grid">
@@ -84,6 +86,34 @@ function ChartsPanel({ analytics, portfolioStocks }) {
             <Tooltip />
             <Legend />
             <Bar dataKey="profit_loss" fill="#16A34A" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="chart-card">
+        <h3>Discount Graph</h3>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={discountData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="symbol" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="discount_percent" fill="#0891B2" name="Discount %" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="chart-card">
+        <h3>Opportunity Graph</h3>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={opportunityData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="symbol" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="opportunity_value" fill="#F59E0B" name="Opportunity Value" />
           </BarChart>
         </ResponsiveContainer>
       </div>
