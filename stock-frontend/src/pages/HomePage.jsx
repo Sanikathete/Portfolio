@@ -1,15 +1,17 @@
 import { useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import TrendingPanel from "../components/TrendingPanel";
+import { hasAuthToken } from "../lib/auth";
 
 function HomePage() {
   const navigate = useNavigate();
+  const authenticated = hasAuthToken();
 
   const actions = (
     <>
-      <button onClick={() => navigate("/dashboard")}>Start Portfolio</button>
-      <button className="secondary-btn" onClick={() => navigate("/growth")}>
-        View Growth
+      <button onClick={() => navigate(authenticated ? "/dashboard" : "/login")}>Start Portfolio</button>
+      <button className="secondary-btn" onClick={() => navigate(authenticated ? "/growth" : "/signup")}>
+        {authenticated ? "Open Growth" : "Create Account"}
       </button>
     </>
   );
@@ -19,6 +21,7 @@ function HomePage() {
       title="Portfolyze"
       subtitle="A premium portfolio analytics platform for building conviction, tracking live positions, and comparing opportunities across stocks, metals, and crypto."
       actions={actions}
+      requireAuth={false}
     >
       <section className="hero-grid">
         <TrendingPanel />
@@ -32,9 +35,9 @@ function HomePage() {
           </p>
 
           <div className="hero-actions">
-            <button onClick={() => navigate("/dashboard")}>Start Portfolio</button>
-            <button className="secondary-btn" onClick={() => navigate("/ml-analysis")}>
-              Explore ML Analysis
+            <button onClick={() => navigate(authenticated ? "/dashboard" : "/login")}>Start Portfolio</button>
+            <button className="secondary-btn" onClick={() => navigate(authenticated ? "/growth" : "/signup")}>
+              Explore Growth
             </button>
           </div>
         </div>
@@ -47,20 +50,20 @@ function HomePage() {
             <strong>Build and manage holdings</strong>
           </div>
           <div className="side-stat">
-            <span>Growth</span>
-            <strong>Current and projected portfolio value</strong>
+            <span>Portfolio Detail</span>
+            <strong>Deep stock snapshots and charts</strong>
           </div>
           <div className="side-stat">
-            <span>ML Analysis</span>
-            <strong>K-cluster, regression, ARIMA</strong>
+            <span>Features</span>
+            <strong>Discount, growth, and risk clustering</strong>
           </div>
           <div className="side-stat">
-            <span>Gold, Silver, Bitcoin</span>
-            <strong>Alternative asset intelligence</strong>
+            <span>Gold and Silver</span>
+            <strong>3-year metals explorer</strong>
           </div>
           <div className="side-stat">
-            <span>Compare</span>
-            <strong>Which asset is more beneficial?</strong>
+            <span>Crypto</span>
+            <strong>BTC forecast with model selection</strong>
           </div>
           <p className="panel-footnote">Use the top navigation to move across each Portfolyze workspace.</p>
         </div>

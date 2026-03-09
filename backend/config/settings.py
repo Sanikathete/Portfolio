@@ -18,6 +18,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "rest_framework.authtoken",
+    "analytics",
+    "staff",
+    "eda",
     "portfolio",
 ]
 
@@ -97,6 +101,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.TokenAuthentication",
         "portfolio.authentication.CsrfExemptSessionAuthentication",
     ),
 }

@@ -1,57 +1,152 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Bar, Line } from "react-chartjs-2";
 import AppShell from "../components/AppShell";
-import AssetForecastCard from "../components/AssetForecastCard";
 import MetricCard from "../components/MetricCard";
 import api from "../api/axios";
+import { createChartOptions } from "../lib/chartSetup";
+import { useCurrencyPreference } from "../context/CurrencyContext";
+import { formatMoney } from "../lib/currency";
+
+const RANGE_OPTIONS = ["1M", "3M", "6M", "1Y", "3Y"];
 
 function MetalsAnalysis() {
+  const [rangeCode, setRangeCode] = useState("3Y");
   const [payload, setPayload] = useState(null);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const { currency } = useCurrencyPreference();
 
   useEffect(() => {
     const load = async () => {
       setError("");
-      setIsLoading(true);
       try {
-        const response = await api.get("/analysis/metals/");
+        const response = await api.get("/metals/history/", {
+          params: { range: rangeCode }
+        });
         setPayload(response.data);
       } catch (err) {
-        setError(err?.response?.data?.detail || "Failed to load metals analysis.");
-      } finally {
-        setIsLoading(false);
+        setError(err?.response?.data?.detail || "Failed to load metals explorer.");
       }
     };
     load();
-  }, []);
+  }, [rangeCode]);
+
+  const comparisonChart = useMemo(() => ({
+    labels: (payload?.comparison || []).map((item) => item.date),
+    datasets: [
+      {
+        label: "Gold",
+        data: (payload?.comparison || []).map((item) => item.gold_price),
+        borderColor: "#f59e0b",
+        backgroundColor: "rgba(245,158,11,0.18)",
+        fill: true,
+        tension: 0.24
+      },
+      {
+        label: "Silver",
+        data: (payload?.comparison || []).map((item) => item.silver_price),
+        borderColor: "#38bdf8",
+        backgroundColor: "rgba(56,189,248,0.18)",
+        fill: true,
+        tension: 0.24
+      }
+    ]
+  }), [payload]);
+
+  const gapChart = useMemo(() => ({
+    labels: (payload?.comparison || []).map((item) => item.date),
+    datasets: [
+      {
+        label: "Silver minus Gold Return Gap",
+        data: (payload?.comparison || []).map((item) => item.return_gap),
+        borderRadius: 10,
+        backgroundColor: "#8b5cf6"
+      }
+    ]
+  }), [payload]);
+
+  const regressionImage = payload?.regression_plot_base64
+    ? `data:image/svg+xml;base64,${payload.regression_plot_base64}`
+    : "";
+
+  const actions = (
+    <select value={rangeCode} onChange={(event) => setRangeCode(event.target.value)}>
+      {RANGE_OPTIONS.map((item) => (
+        <option key={item} value={item}>
+          {item}
+        </option>
+      ))}
+    </select>
+  );
+
+  const latestGold = payload?.gold?.[payload.gold.length - 1]?.price || 0;
+  const latestSilver = payload?.silver?.[payload.silver.length - 1]?.price || 0;
 
   return (
     <AppShell
-      title="Gold and Silver Analysis"
-      subtitle="Track precious metals with historical performance plus ARIMA and linear-regression forecasts."
+      title="Gold and Silver"
+      subtitle="Compare 3-year gold and silver history with a range switcher, return-gap view, 3-month insights, and a correlation regression plot."
+      actions={actions}
       error={error}
     >
       <section className="analytics-strip">
-        <MetricCard eyebrow="Most Beneficial Metal" value={payload?.most_beneficial || "-"} tone="amber" />
-        <MetricCard
-          eyebrow="Gold Trend"
-          value={`${Number(payload?.assets?.[0]?.predicted_arima_return_percent || 0).toFixed(2)}%`}
-          tone="blue"
-        />
-        <MetricCard
-          eyebrow="Silver Trend"
-          value={`${Number(payload?.assets?.[1]?.predicted_arima_return_percent || 0).toFixed(2)}%`}
-          tone="violet"
-        />
+        <MetricCard eyebrow="Gold" value={formatMoney(latestGold, currency)} tone="amber" />
+        <MetricCard eyebrow="Silver" value={formatMoney(latestSilver, currency)} tone="blue" />
+        <MetricCard eyebrow="Leading Metal" value={payload?.insights?.leading_metal || "-"} tone="emerald" />
+        <MetricCard eyebrow="Correlation" value={Number(payload?.insights?.correlation || 0).toFixed(4)} tone="violet" />
       </section>
 
-      {isLoading ? (
-        <div className="card">
-          <p className="metric-label">Loading metals analysis...</p>
+      <section className="dashboard-charts-grid">
+        <div className="chart-card">
+          <div className="section-head compact">
+            <div>
+              <p className="panel-kicker">Trend Comparison</p>
+              <h3>Gold vs Silver</h3>
+            </div>
+          </div>
+          <div className="chart-canvas tall">
+            <Line data={comparisonChart} options={createChartOptions()} />
+          </div>
         </div>
-      ) : (
-        (payload?.assets || []).map((asset) => <AssetForecastCard key={asset.symbol} asset={asset} />)
-      )}
+
+        <div className="chart-card">
+          <div className="section-head compact">
+            <div>
+              <p className="panel-kicker">Return Gap</p>
+              <h3>Silver Minus Gold</h3>
+            </div>
+          </div>
+          <div className="chart-canvas tall">
+            <Bar data={gapChart} options={createChartOptions()} />
+          </div>
+        </div>
+      </section>
+
+      <section className="growth-layout">
+        <div className="glass-card growth-summary">
+          <div className="section-head compact">
+            <div>
+              <p className="panel-kicker">3-Month Insights</p>
+              <h3>Market Snapshot</h3>
+            </div>
+          </div>
+          <div className="summary-list">
+            <div><span>Gold 3M Return</span><strong>{Number(payload?.insights?.gold_3m_return_percent || 0).toFixed(2)}%</strong></div>
+            <div><span>Silver 3M Return</span><strong>{Number(payload?.insights?.silver_3m_return_percent || 0).toFixed(2)}%</strong></div>
+            <div><span>Correlation</span><strong>{Number(payload?.insights?.correlation || 0).toFixed(4)}</strong></div>
+            <div><span>Leader</span><strong>{payload?.insights?.leading_metal || "-"}</strong></div>
+          </div>
+        </div>
+
+        <div className="chart-card growth-main">
+          <div className="section-head compact">
+            <div>
+              <p className="panel-kicker">Regression Plot</p>
+              <h3>Correlation and Regression</h3>
+            </div>
+          </div>
+          {regressionImage ? <img src={regressionImage} alt="Gold silver regression" className="risk-plot" /> : <p className="metric-label">No regression plot available.</p>}
+        </div>
+      </section>
     </AppShell>
   );
 }

@@ -2,13 +2,24 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import TopNav from "./TopNav";
 import { useCurrencyPreference } from "../context/CurrencyContext";
+import { clearAuthToken, hasAuthToken } from "../lib/auth";
 
-function AppShell({ title, subtitle, actions = null, error = "", children, currencyCountryName = "" }) {
+function AppShell({
+  title,
+  subtitle,
+  actions = null,
+  error = "",
+  children,
+  currencyCountryName = "",
+  requireAuth = true
+}) {
   const navigate = useNavigate();
   const { selectedCode, setSelectedCode, currency } = useCurrencyPreference(currencyCountryName);
+  const authenticated = hasAuthToken();
 
   const handleLogout = () => {
-    api.post("/logout/").catch(() => null);
+    api.post("/auth/logout/").catch(() => null);
+    clearAuthToken();
     navigate("/login");
   };
 
@@ -41,9 +52,11 @@ function AppShell({ title, subtitle, actions = null, error = "", children, curre
             <option value="CNY">CNY</option>
           </select>
           {actions}
-          <button onClick={handleLogout} className="danger-btn">
-            Logout
-          </button>
+          {requireAuth && authenticated ? (
+            <button onClick={handleLogout} className="danger-btn">
+              Logout
+            </button>
+          ) : null}
         </div>
       </div>
 

@@ -1,4 +1,10 @@
-function PortfolioTable({ items, totalValue, onRemove, formatMoney = (value) => `$${Number(value || 0).toFixed(2)}` }) {
+function PortfolioTable({
+  items,
+  totalValue,
+  onRemove,
+  onOpen = null,
+  formatMoney = (value) => `$${Number(value || 0).toFixed(2)}`
+}) {
   return (
     <div className="table-wrap premium-table">
       <table>
@@ -26,21 +32,26 @@ function PortfolioTable({ items, totalValue, onRemove, formatMoney = (value) => 
           ) : (
             items.map((item) => (
               <tr key={item.id}>
-                <td>{item.stock.symbol}</td>
-                <td>{item.stock.company_name}</td>
+                <td>{item.ticker || item.stock?.symbol}</td>
+                <td>{item.name || item.stock?.company_name}</td>
                 <td>{item.quantity}</td>
                 <td>{formatMoney(item.buy_price)}</td>
                 <td>{formatMoney(item.current_price)}</td>
-                <td>{Number(item.pe_ratio).toFixed(2)}</td>
-                <td className={Number(item.discount_percent) >= 0 ? "profit-text" : "loss-text"}>
-                  {Number(item.discount_percent).toFixed(2)}%
+                <td>{Number(item.pe_ratio || 0).toFixed(2)}</td>
+                <td className={Number(item.discount_level ?? item.discount_percent ?? 0) >= 0 ? "profit-text" : "loss-text"}>
+                  {Number(item.discount_level ?? item.discount_percent ?? 0).toFixed(2)}%
                 </td>
-                <td className={Number(item.profit_loss) >= 0 ? "profit-text" : "loss-text"}>
+                <td className={Number(item.profit_loss || 0) >= 0 ? "profit-text" : "loss-text"}>
                   {formatMoney(item.profit_loss)}
                 </td>
                 <td>{formatMoney(item.position_value)}</td>
                 <td>
-                  <button className="ghost-danger-btn" onClick={() => onRemove(item.stock.id)}>
+                  {onOpen ? (
+                    <button className="secondary-btn" onClick={() => onOpen(item.stock_id || item.stock?.id)}>
+                      View
+                    </button>
+                  ) : null}
+                  <button className="ghost-danger-btn" onClick={() => onRemove(item.stock_id || item.stock?.id)}>
                     Remove
                   </button>
                 </td>

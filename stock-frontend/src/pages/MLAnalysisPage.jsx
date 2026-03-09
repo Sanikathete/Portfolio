@@ -23,7 +23,7 @@ function MLAnalysisPage() {
       setError("");
       try {
         const portfolioResponse = await api.get("/portfolios/");
-        const list = portfolioResponse.data.portfolios || [];
+        const list = portfolioResponse.data || [];
         setPortfolios(list);
         const firstId = list[0]?.id ? String(list[0].id) : "";
         setSelectedPortfolioId(firstId);
@@ -147,6 +147,7 @@ function MLAnalysisPage() {
 
   const actions = (
     <select value={selectedPortfolioId} onChange={(event) => setSelectedPortfolioId(event.target.value)}>
+      {portfolios.length === 0 ? <option value="">No portfolios</option> : null}
       {portfolios.map((item) => (
         <option key={item.id} value={item.id}>
           {item.name}

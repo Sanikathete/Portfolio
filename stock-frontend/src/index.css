@@ -705,6 +705,19 @@ button:disabled {
   font-weight: 700;
 }
 
+.risk-plot {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(10, 18, 36, 0.72);
+}
+
+td button + button {
+  margin-left: 8px;
+}
+
 .center-text {
   text-align: center;
 }

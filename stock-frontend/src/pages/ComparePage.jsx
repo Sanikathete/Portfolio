@@ -21,7 +21,7 @@ function ComparePage() {
       setIsLoading(true);
       try {
         const portfolioResponse = await api.get("/portfolios/");
-        const list = portfolioResponse.data.portfolios || [];
+        const list = portfolioResponse.data || [];
         setPortfolios(list);
         const portfolioId = list[0]?.id ? String(list[0].id) : "";
         setSelectedPortfolioId(portfolioId);

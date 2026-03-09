@@ -29,6 +29,7 @@ class Portfolio(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="portfolios"
     )
     sector = models.ForeignKey(Sector, on_delete=models.CASCADE, null=True, blank=True)
+    sector_name = models.CharField(max_length=100, blank=True, default="")
     name = models.CharField(max_length=100, default="My Portfolio")
 
     def total_value(self):
@@ -87,8 +88,14 @@ class Stock(models.Model):
     quantity = models.IntegerField(default=0)
     company_name = models.CharField(max_length=255, blank=True, default="")
     pe_ratio = models.FloatField(null=True, blank=True)
+    eps = models.FloatField(null=True, blank=True)
     previous_close = models.FloatField(null=True, blank=True)
     market_cap = models.BigIntegerField(null=True, blank=True)
+    min_price = models.FloatField(null=True, blank=True)
+    max_price = models.FloatField(null=True, blank=True)
+    intrinsic_value = models.FloatField(null=True, blank=True)
+    discount_level = models.FloatField(null=True, blank=True)
+    opportunity_score = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return self.name

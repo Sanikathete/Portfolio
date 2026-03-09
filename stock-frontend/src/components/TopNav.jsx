@@ -1,13 +1,13 @@
 import { NavLink } from "react-router-dom";
 
 const NAV_ITEMS = [
-  { to: "/home", label: "Home" },
-  { to: "/dashboard", label: "My Dashboard" },
+  { to: "/", label: "Home" },
+  { to: "/dashboard", label: "Dashboard" },
   { to: "/growth", label: "Growth" },
   { to: "/ml-analysis", label: "ML Analysis" },
+  { to: "/compare", label: "Compare" },
   { to: "/metals", label: "Gold Silver" },
-  { to: "/bitcoin", label: "Bitcoin" },
-  { to: "/compare", label: "Compare" }
+  { to: "/crypto", label: "Crypto" }
 ];
 
 function TopNav() {

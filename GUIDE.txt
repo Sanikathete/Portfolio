@@ -32,7 +32,7 @@ Frontend URL (open this in browser):
 http://localhost:5173
 
 Important:
-Use localhost for both frontend and backend (session cookie auth).
+Use localhost for both frontend and backend.
 
 ==================================================
 3) LOGIN FLOW
@@ -42,8 +42,9 @@ http://localhost:5173
 
 Login with your Django user credentials.
 
-Auth is session-based (no JWT token storage).
-You may need to log in again after browser restart.
+Auth is token-based.
+The frontend stores the auth token in localStorage and sends it to `/api/auth/*` endpoints.
+If you clear browser storage, you will need to log in again.
 
 ==================================================
 4) IF YOU RESTART PC / CLOSE VS CODE
@@ -58,7 +59,7 @@ Do not close those terminals while using the app.
 5) QUICK TROUBLESHOOTING
 ==================================================
 A) "Failed to load stocks for selected sector"
-- Backend probably not running, or session ended.
+- Backend probably not running, or auth token is missing/expired.
 - Check backend terminal is running.
 - Refresh page and login again.
 

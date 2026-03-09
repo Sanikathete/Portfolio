@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { setAuthToken } from "../lib/auth";
 
-function Login() {
-  const [mode, setMode] = useState("login");
+function Login({ initialMode = "login" }) {
+  const [mode, setMode] = useState(initialMode);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -12,98 +13,78 @@ function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.post("/logout/").catch(() => null);
-  }, []);
-
-  const resetAlerts = () => {
+    setMode(initialMode);
+    setPassword("");
+    setConfirmPassword("");
     setError("");
     setMessage("");
-  };
+  }, [initialMode]);
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
     setPassword("");
     setConfirmPassword("");
-    resetAlerts();
+    setError("");
+    setMessage("");
+    navigate(nextMode === "signup" ? "/signup" : "/login");
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    resetAlerts();
-    const cleanUsername = username.trim();
-    const cleanPassword = password;
+  const handleAuthSuccess = (payload) => {
+    setAuthToken(payload?.token || "");
+    navigate("/dashboard");
+  };
 
-    if (!cleanUsername || !cleanPassword) {
-      setError("Username and password are required.");
-      return;
-    }
-
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
     try {
-      await api.post("/login/", {
-        username: cleanUsername,
-        password: cleanPassword,
+      const response = await api.post("/auth/login/", {
+        username: username.trim(),
+        password
       });
-      navigate("/home");
+      handleAuthSuccess(response.data);
     } catch (err) {
-      if (!err?.response) {
-        setError("Cannot reach server. Start backend and try again.");
-        return;
-      }
       setError(err?.response?.data?.detail || "Login failed.");
     }
   };
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    resetAlerts();
-    const cleanUsername = username.trim();
-
-    if (!cleanUsername || !password) {
-      setError("Username and password are required.");
-      return;
-    }
-
+  const handleSignup = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
-
     try {
-      await api.post("/signup/", { username: cleanUsername, password });
-      setMessage("Account created. Please log in.");
-      setPassword("");
-      setConfirmPassword("");
-      setMode("login");
+      const response = await api.post("/auth/signup/", {
+        username: username.trim(),
+        password
+      });
+      handleAuthSuccess(response.data);
     } catch (err) {
       setError(err?.response?.data?.detail || "Unable to create account.");
     }
   };
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    resetAlerts();
-    const cleanUsername = username.trim();
-
-    if (!cleanUsername || !password || !confirmPassword) {
-      setError("Username, new password and confirmation are required.");
-      return;
-    }
-
+  const handleForgotPassword = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
-
     try {
       await api.post("/forgot-password/", {
-        username: cleanUsername,
+        username: username.trim(),
         password,
         confirm_password: confirmPassword
       });
       setMessage("Password reset complete. Please log in.");
-      setPassword("");
-      setConfirmPassword("");
       setMode("login");
+      navigate("/login");
     } catch (err) {
       setError(err?.response?.data?.detail || "Unable to reset password.");
     }
@@ -131,56 +112,49 @@ function Login() {
         </div>
 
         <form
-          onSubmit={
-            mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgotPassword
-          }
           className="form"
+          onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgotPassword}
         >
           <input
             type="text"
             placeholder="Username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(event) => setUsername(event.target.value)}
             required
           />
           <input
             type="password"
             placeholder={mode === "forgot" ? "New Password" : "Password"}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             required
           />
-          {(mode === "signup" || mode === "forgot") && (
+          {(mode === "signup" || mode === "forgot") ? (
             <input
               type="password"
               placeholder="Confirm Password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(event) => setConfirmPassword(event.target.value)}
               required
             />
-          )}
+          ) : null}
+
           <button type="submit">
             {mode === "login" ? "Login" : mode === "signup" ? "Create Account" : "Reset Password"}
           </button>
+
           {mode !== "forgot" ? (
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => switchMode("forgot")}
-            >
+            <button type="button" className="secondary-btn" onClick={() => setMode("forgot")}>
               Forgot Password
             </button>
           ) : (
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => switchMode("login")}
-            >
+            <button type="button" className="secondary-btn" onClick={() => switchMode("login")}>
               Back To Login
             </button>
           )}
-          {message && <p className="profit-text">{message}</p>}
-          {error && <p className="error">{error}</p>}
+
+          {message ? <p className="profit-text">{message}</p> : null}
+          {error ? <p className="error">{error}</p> : null}
         </form>
       </div>
     </div>
