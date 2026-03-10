@@ -8,21 +8,32 @@ import { useCurrencyPreference } from "../context/CurrencyContext";
 import { formatMoney } from "../lib/currency";
 
 const MODEL_OPTIONS = ["linear", "arima", "rnn"];
-const HORIZON_OPTIONS = [14, 30, 60, 90];
+const RANGE_OPTIONS = [
+  { value: "1H", label: "1 hr" },
+  { value: "12H", label: "12 hrs" },
+  { value: "1D", label: "1 day" },
+  { value: "1W", label: "1 week" },
+  { value: "1M", label: "1 month" },
+  { value: "3M", label: "3 months" },
+  { value: "6M", label: "6 months" },
+  { value: "1Y", label: "1 year" },
+  { value: "3Y", label: "3 year" },
+];
 
 function BitcoinAnalysis() {
   const [model, setModel] = useState("linear");
-  const [horizon, setHorizon] = useState(30);
+  const [rangeCode, setRangeCode] = useState("6M");
   const [payload, setPayload] = useState(null);
   const [error, setError] = useState("");
   const { currency } = useCurrencyPreference();
+  const horizon = 30;
 
   useEffect(() => {
     const load = async () => {
       setError("");
       try {
         const response = await api.get("/crypto/btc/forecast/", {
-          params: { model, horizon }
+          params: { model, horizon, range: rangeCode }
         });
         setPayload(response.data);
       } catch (err) {
@@ -30,7 +41,7 @@ function BitcoinAnalysis() {
       }
     };
     load();
-  }, [model, horizon]);
+  }, [model, rangeCode]);
 
   const chartData = useMemo(() => {
     const historical = payload?.historical || [];
@@ -70,10 +81,10 @@ function BitcoinAnalysis() {
           </option>
         ))}
       </select>
-      <select value={horizon} onChange={(event) => setHorizon(Number(event.target.value))}>
-        {HORIZON_OPTIONS.map((item) => (
-          <option key={item} value={item}>
-            {item} Days
+      <select value={rangeCode} onChange={(event) => setRangeCode(event.target.value)}>
+        {RANGE_OPTIONS.map((item) => (
+          <option key={item.value} value={item.value}>
+            {item.label}
           </option>
         ))}
       </select>
@@ -83,7 +94,7 @@ function BitcoinAnalysis() {
   return (
     <AppShell
       title="BTC Forecast Explorer"
-      subtitle="Run BTC-USD projections with linear, ARIMA, or lightweight NumPy RNN logic and choose 14, 30, 60, or 90 day horizons."
+      subtitle="Run BTC-USD projections with linear, ARIMA, or lightweight NumPy RNN logic and explore different history durations."
       actions={actions}
       error={error}
     >

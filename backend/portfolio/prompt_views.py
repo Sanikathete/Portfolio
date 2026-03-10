@@ -303,4 +303,8 @@ class CryptoForecastPromptView(APIView):
     def get(self, request):
         model_name = request.query_params.get("model", "linear")
         horizon = request.query_params.get("horizon", 30)
-        return Response(btc_forecast_payload(model_name=model_name, horizon=horizon), status=status.HTTP_200_OK)
+        range_code = request.query_params.get("range", "6M")
+        return Response(
+            btc_forecast_payload(model_name=model_name, horizon=horizon, range_code=range_code),
+            status=status.HTTP_200_OK,
+        )

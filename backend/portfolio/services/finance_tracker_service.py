@@ -28,13 +28,34 @@ from portfolio.services.yahoo_service import (
 
 
 HISTORY_RANGE_MAP = {
+    "1H": ("1d", "5m"),
+    "12H": ("1d", "15m"),
     "1D": ("1d", "30m"),
+    "1W": ("7d", "1h"),
     "7D": ("7d", "1d"),
     "1M": ("1mo", "1d"),
     "3M": ("3mo", "1d"),
     "6M": ("6mo", "1d"),
     "1Y": ("1y", "1wk"),
     "3Y": ("3y", "1wk"),
+}
+HISTORY_TRIM_WINDOWS = {
+    "1H": pd.Timedelta(hours=1),
+    "12H": pd.Timedelta(hours=12),
+    "1D": pd.Timedelta(days=1),
+    "1W": pd.Timedelta(days=7),
+}
+HISTORY_FALLBACK_POINTS = {
+    "1H": 12,
+    "12H": 48,
+    "1D": 48,
+    "1W": 168,
+    "7D": 7,
+    "1M": 30,
+    "3M": 90,
+    "6M": 180,
+    "1Y": 52,
+    "3Y": 156,
 }
 GROWTH_RANGE_MAP = {
     "1W": ("7d", "1d"),
@@ -82,11 +103,21 @@ def _round_series(history_df: pd.DataFrame) -> List[Dict]:
     if history_df.empty:
         return []
     price_column = "Close" if "Close" in history_df.columns else history_df.columns[-1]
+    has_time = False
+    try:
+        for stamp in history_df.index:
+            timestamp = pd.Timestamp(stamp)
+            if timestamp.hour or timestamp.minute or timestamp.second:
+                has_time = True
+                break
+    except Exception:
+        has_time = False
+    date_format = "%Y-%m-%d %H:%M" if has_time else "%Y-%m-%d"
     output = []
     for index, row in history_df.iterrows():
         output.append(
             {
-                "date": pd.Timestamp(index).strftime("%Y-%m-%d"),
+                "date": pd.Timestamp(index).strftime(date_format),
                 "price": round(_safe_float(row.get(price_column), default=0.0), 2),
             }
         )
@@ -94,25 +125,24 @@ def _round_series(history_df: pd.DataFrame) -> List[Dict]:
 
 
 def _history_bundle(symbol: str, range_code: str) -> HistoryBundle:
-    period, interval = HISTORY_RANGE_MAP.get(range_code.upper(), HISTORY_RANGE_MAP["3M"])
+    range_key = str(range_code or "3M").strip().upper()
+    period, interval = HISTORY_RANGE_MAP.get(range_key, HISTORY_RANGE_MAP["3M"])
     history_df = _fetch_history(symbol, period=period, interval=interval)
+    if not history_df.empty and range_key in HISTORY_TRIM_WINDOWS:
+        last_stamp = history_df.index.max()
+        if not pd.isna(last_stamp):
+            cutoff = pd.Timestamp(last_stamp) - HISTORY_TRIM_WINDOWS[range_key]
+            history_df = history_df.loc[history_df.index >= cutoff]
     history = _round_series(history_df)
 
     if not history:
-        fallback_periods = {
-            "1D": 12,
-            "7D": 7,
-            "1M": 30,
-            "3M": 90,
-            "6M": 180,
-            "1Y": 52,
-            "3Y": 156,
-        }
         snapshot = get_stock_data(symbol)
+        fallback_points = HISTORY_FALLBACK_POINTS.get(range_key, 30)
         history = _build_synthetic_history(
             symbol,
             snapshot.get("current_price", 100.0),
-            fallback_periods.get(range_code.upper(), 30),
+            fallback_points,
+            freq=interval,
         )
 
     prices = [_safe_float(item["price"], 0.0) for item in history] or [0.0]
@@ -625,31 +655,59 @@ def _rnn_forecast_values(history: List[Dict], horizon: int) -> List[float]:
     return forecasts
 
 
-def _with_future_dates(historical: List[Dict], values: Iterable[float]) -> List[Dict]:
+def _interval_to_timedelta(interval: str) -> pd.Timedelta:
+    clean = str(interval or "1d").strip().lower()
+    if clean.endswith("wk"):
+        count = int(clean[:-2] or 1)
+        return pd.Timedelta(weeks=count)
+    if clean.endswith("d"):
+        count = int(clean[:-1] or 1)
+        return pd.Timedelta(days=count)
+    if clean.endswith("h"):
+        count = int(clean[:-1] or 1)
+        return pd.Timedelta(hours=count)
+    if clean.endswith("m"):
+        count = int(clean[:-1] or 1)
+        return pd.Timedelta(minutes=count)
+    return pd.Timedelta(days=1)
+
+
+def _format_date_for_interval(timestamp: pd.Timestamp, interval: str) -> str:
+    clean = str(interval or "1d").strip().lower()
+    if clean.endswith("h") or clean.endswith("m"):
+        return timestamp.strftime("%Y-%m-%d %H:%M")
+    return timestamp.strftime("%Y-%m-%d")
+
+
+def _with_future_dates(historical: List[Dict], values: Iterable[float], interval: str = "1d") -> List[Dict]:
     if historical:
         last_date = pd.to_datetime(historical[-1]["date"], errors="coerce")
     else:
         last_date = pd.Timestamp.utcnow().normalize()
     if pd.isna(last_date):
         last_date = pd.Timestamp.utcnow().normalize()
+    step = _interval_to_timedelta(interval)
     output = []
     for index, value in enumerate(values, start=1):
         output.append(
             {
-                "date": (last_date + pd.Timedelta(days=index)).strftime("%Y-%m-%d"),
+                "date": _format_date_for_interval(last_date + (step * index), interval),
                 "price": round(_safe_float(value, 0.0), 2),
             }
         )
     return output
 
 
-def btc_forecast_payload(model_name: str = "linear", horizon: int = 30) -> Dict:
+def btc_forecast_payload(model_name: str = "linear", horizon: int = 30, range_code: str = "6M") -> Dict:
     clean_model = str(model_name or "linear").strip().lower()
     clean_model = clean_model if clean_model in {"linear", "arima", "rnn"} else "linear"
     clean_horizon = int(_clamp(int(horizon or 30), 7, 120))
-    history = _history_bundle("BTC-USD", "1Y").series[-180:]
+    clean_range = str(range_code or "6M").strip().upper()
+    clean_range = clean_range if clean_range in HISTORY_RANGE_MAP else "6M"
+    _, interval = HISTORY_RANGE_MAP.get(clean_range, HISTORY_RANGE_MAP["6M"])
+    history = _history_bundle("BTC-USD", clean_range).series
     if not history:
-        history = _build_synthetic_history("BTC-USD", 68250.0, 180)
+        history = _build_synthetic_history("BTC-USD", 68250.0, 180, freq=interval)
 
     if clean_model == "arima":
         forecast_values = _arima_forecast_values(history, clean_horizon)
@@ -661,7 +719,7 @@ def btc_forecast_payload(model_name: str = "linear", horizon: int = 30) -> Dict:
     if not forecast_values:
         forecast_values = [history[-1]["price"]] * clean_horizon
 
-    forecast = _with_future_dates(history, forecast_values)
+    forecast = _with_future_dates(history, forecast_values, interval=interval)
     current_price = _safe_float(history[-1]["price"], 0.0)
     projected_price = _safe_float(forecast[-1]["price"], current_price)
     projected_change = 0.0 if current_price <= 0 else ((projected_price - current_price) / current_price) * 100
@@ -669,6 +727,7 @@ def btc_forecast_payload(model_name: str = "linear", horizon: int = 30) -> Dict:
         "symbol": "BTC-USD",
         "model": clean_model,
         "horizon": clean_horizon,
+        "range": clean_range,
         "available_models": ["linear", "arima", "rnn"],
         "historical": history,
         "forecast": forecast,

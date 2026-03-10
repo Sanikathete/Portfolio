@@ -139,20 +139,44 @@ def _build_profile(symbol: str, fallback_sector: str | None = None, default_labe
     }
 
 
-def _make_series_dates(length: int) -> List[str]:
-    end_date = pd.Timestamp.utcnow().normalize()
-    start_date = end_date - pd.Timedelta(days=max(length - 1, 0))
-    return [item.strftime("%Y-%m-%d") for item in pd.date_range(start=start_date, periods=length, freq="D")]
+def _normalize_series_freq(freq: str) -> str:
+    clean = str(freq or "D").strip().lower()
+    if clean in {"1wk", "1w", "w", "week", "weekly"}:
+        return "W"
+    if clean in {"1d", "d", "day", "daily"}:
+        return "D"
+    if clean.endswith("m") and clean[:-1].isdigit():
+        return f"{int(clean[:-1])}min"
+    if clean.endswith("h") and clean[:-1].isdigit():
+        return f"{int(clean[:-1])}H"
+    return clean or "D"
 
 
-def _build_synthetic_history(symbol: str, current_price: float, periods: int) -> List[Dict]:
+def _make_series_dates(length: int, freq: str = "D") -> List[pd.Timestamp]:
+    if length <= 0:
+        return []
+    pandas_freq = _normalize_series_freq(freq)
+    end_date = pd.Timestamp.utcnow()
+    if pandas_freq.endswith("D") or pandas_freq.endswith("W"):
+        end_date = end_date.normalize()
+    return list(pd.date_range(end=end_date, periods=length, freq=pandas_freq))
+
+
+def _format_series_date(timestamp: pd.Timestamp, freq: str) -> str:
+    clean = _normalize_series_freq(freq).lower()
+    if "min" in clean or clean.endswith("h"):
+        return timestamp.strftime("%Y-%m-%d %H:%M")
+    return timestamp.strftime("%Y-%m-%d")
+
+
+def _build_synthetic_history(symbol: str, current_price: float, periods: int, freq: str = "D") -> List[Dict]:
     safe_price = max(_safe_float(current_price, default=100.0), 1.0)
     seed = int(hashlib.sha256(symbol.upper().encode("ascii", errors="ignore")).hexdigest()[:8], 16)
     amplitude = 0.008 + ((seed % 7) * 0.0025)
     drift = (((seed // 7) % 11) - 5) / 260.0
     phase = (seed % 31) / 5.0
 
-    dates = _make_series_dates(periods)
+    dates = _make_series_dates(periods, freq=freq)
     values = []
     for index in range(periods):
         progress = index - (periods - 1)
@@ -164,7 +188,7 @@ def _build_synthetic_history(symbol: str, current_price: float, periods: int) ->
 
     adjustment = safe_price - values[-1]
     values = [round(max(value + adjustment, 0.01), 2) for value in values]
-    return [{"date": date, "price": value} for date, value in zip(dates, values)]
+    return [{"date": _format_series_date(date, freq), "price": value} for date, value in zip(dates, values)]
 
 
 def _history_to_frame(history: List[Dict]) -> pd.DataFrame:
