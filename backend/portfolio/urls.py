@@ -63,7 +63,7 @@ urlpatterns = [
     path("stocks/<int:stock_id>/", StockDetailPromptView.as_view(), name="stock-detail-prompt"),
     path("countries/", CountryListAPIView.as_view(), name="countries"),
     path("sectors/<int:country_id>/", SectorByCountryAPIView.as_view(), name="sectors-by-country"),
-    path("stocks/<int:sector_id>/", StockBySectorAPIView.as_view(), name="stocks-by-sector-id"),
+    path("sectors/<int:sector_id>/stocks/", StockBySectorAPIView.as_view(), name="stocks-by-sector-id"),
     path("add-stock/", AddStockAPIView.as_view(), name="add-stock"),
     path(
         "portfolio/<int:portfolio_id>/analytics/",

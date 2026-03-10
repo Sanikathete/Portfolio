@@ -30,8 +30,6 @@ function Dashboard() {
   const [topDiscount, setTopDiscount] = useState(null);
   const [topGrowth, setTopGrowth] = useState(null);
   const [growthRange, setGrowthRange] = useState("1M");
-  const [stockQuery, setStockQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
   const [selectedTicker, setSelectedTicker] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState("");
@@ -48,30 +46,6 @@ function Dashboard() {
     return sectors.filter((item) => !query || item.name.toLowerCase().includes(query));
   }, [sectors, sectorQuery]);
 
-  const stockOptions = useMemo(() => {
-    const merged = new Map();
-    for (const stock of sectorStocks) {
-      const ticker = stock.symbol || stock.ticker;
-      if (!ticker) {
-        continue;
-      }
-      merged.set(ticker, {
-        id: ticker,
-        ticker,
-        name: stock.name || stock.company_name || ticker,
-        exchange: stock.exchange || "",
-        type: stock.type || "Sector Universe"
-      });
-    }
-    for (const stock of searchResults) {
-      if (!stock?.ticker) {
-        continue;
-      }
-      merged.set(stock.ticker, stock);
-    }
-    return [...merged.values()];
-  }, [searchResults, sectorStocks]);
-
   const totalValue = useMemo(
     () => (portfolio?.stocks || []).reduce((sum, item) => sum + Number(item.position_value || 0), 0),
     [portfolio]
@@ -79,9 +53,6 @@ function Dashboard() {
 
   const selectedCountry = countries.find((item) => String(item.id) === String(selectedCountryId));
   const selectedSector = sectors.find((item) => String(item.id) === String(selectedSectorId));
-  const selectedStock =
-    stockOptions.find((item) => item.ticker === selectedTicker)
-    || (selectedTicker ? { ticker: selectedTicker, name: selectedTicker } : null);
 
   const discountChart = {
     labels: (topDiscount?.items || []).map((item) => item.ticker),
@@ -204,42 +175,28 @@ function Dashboard() {
   }, [selectedCountryId]);
 
   useEffect(() => {
-    if (!selectedSectorId) {
+    if (!selectedSectorId || !selectedSector?.name) {
       setSectorStocks([]);
       return;
     }
 
     const loadSectorStocks = async () => {
       try {
-        const response = await api.get(`/stocks/${selectedSectorId}/`);
-        setSectorStocks(response.data || []);
+        const sectorName = encodeURIComponent(selectedSector.name);
+        const response = await api.get(`/stocks/by-sector/${sectorName}/`);
+        const list = response.data || [];
+        setSectorStocks(list);
+        setSelectedTicker((current) =>
+          list.some((item) => (item.symbol || item.ticker) === current) ? current : ""
+        );
       } catch {
         setSectorStocks([]);
+        setSelectedTicker("");
       }
     };
 
     loadSectorStocks();
-  }, [selectedSectorId]);
-
-  useEffect(() => {
-    if (stockQuery.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        const response = await api.get("/stocks/search/", {
-          params: { q: stockQuery.trim() }
-        });
-        setSearchResults((response.data || []).map((item) => ({ ...item, id: item.ticker })));
-      } catch {
-        setSearchResults([]);
-      }
-    }, 300);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [stockQuery]);
+  }, [selectedSectorId, selectedSector?.name]);
 
   const handleCreatePortfolio = async () => {
     setError("");
@@ -294,9 +251,7 @@ function Dashboard() {
         ticker: selectedTicker,
         quantity: Number(quantity)
       });
-      setStockQuery("");
       setSelectedTicker("");
-      setSearchResults([]);
       await loadWorkspace(selectedPortfolioId, growthRange);
     } catch (err) {
       setError(err?.response?.data?.detail || "Failed to add stock.");
@@ -411,20 +366,28 @@ function Dashboard() {
           <div className="builder-step compact-step">
             <span className="step-tag">03</span>
             <h3>Select Stock</h3>
-            <p>Use the selected country and sector list, or search live Yahoo suggestions by company or ticker.</p>
-            <SearchPicker
-              title="Ticker Search"
-              placeholder="Search by company or ticker"
-              query={stockQuery}
-              onQueryChange={setStockQuery}
-              options={stockOptions}
-              selectedId={selectedTicker}
-              selectedOption={selectedStock}
-              onSelect={setSelectedTicker}
-              getLabel={(item) => `${item.ticker} ${item.name ? `- ${item.name}` : ""}`}
-              getMeta={(item) => [item.exchange, item.type].filter(Boolean).join(" • ")}
-              emptyMessage="Choose a sector or type at least two characters to search."
-            />
+            <p>Choose a stock from the selected sector list.</p>
+            <select
+              value={selectedTicker}
+              onChange={(event) => setSelectedTicker(event.target.value)}
+              disabled={!selectedSectorId || sectorStocks.length === 0}
+            >
+              <option value="">
+                {!selectedSectorId ? "Select a sector first" : "Select stock"}
+              </option>
+              {sectorStocks.map((item) => {
+                const ticker = item.symbol || item.ticker;
+                const name = item.name || item.company_name;
+                if (!ticker) {
+                  return null;
+                }
+                return (
+                  <option key={ticker} value={ticker}>
+                    {ticker} {name ? `- ${name}` : ""}
+                  </option>
+                );
+              })}
+            </select>
           </div>
 
           <div className="builder-step compact-step">
@@ -532,3 +495,4 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
