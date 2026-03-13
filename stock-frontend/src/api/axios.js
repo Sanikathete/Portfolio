@@ -1,9 +1,13 @@
 import axios from "axios";
 import { clearAuthToken, getAuthToken } from "../lib/auth";
 
+
+
 const api = axios.create({
-  baseURL: "http://localhost:8000/api"
+  baseURL: "/api"
 });
+
+export default api;
 
 api.interceptors.request.use((config) => {
   const token = getAuthToken();
