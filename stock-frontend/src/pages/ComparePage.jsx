@@ -3,6 +3,7 @@ import AppShell from "../components/AppShell";
 import CompareBoard from "../components/CompareBoard";
 import MetricCard from "../components/MetricCard";
 import { useCurrencyPreference } from "../context/CurrencyContext";
+import { ensureArray } from "../lib/api";
 import api from "../api/axios";
 
 function ComparePage() {
@@ -18,13 +19,13 @@ function ComparePage() {
   useEffect(() => {
     const loadInitialData = async () => {
       setError("");
-      setIsLoading(true);
-      try {
-        const portfolioResponse = await api.get("/portfolios/");
-        const list = portfolioResponse.data || [];
-        setPortfolios(list);
-        const portfolioId = list[0]?.id ? String(list[0].id) : "";
-        setSelectedPortfolioId(portfolioId);
+        setIsLoading(true);
+        try {
+          const portfolioResponse = await api.get("/portfolios/");
+          const list = ensureArray(portfolioResponse.data);
+          setPortfolios(list);
+          const portfolioId = list[0]?.id ? String(list[0].id) : "";
+          setSelectedPortfolioId(portfolioId);
 
         const comparisonResponse = await api.get("/analysis/compare/", {
           params: portfolioId ? { portfolio_id: portfolioId } : {}

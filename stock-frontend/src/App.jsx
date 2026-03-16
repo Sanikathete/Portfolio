@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import api from "./api/axios";
 import "./lib/chartSetup";
 import { hasAuthToken } from "./lib/auth";
 import Dashboard from "./pages/Dashboard";
@@ -14,48 +12,7 @@ import ComparePage from "./pages/ComparePage";
 import StockDetailPage from "./pages/StockDetailPage";
 
 function PrivateRoute({ children }) {
-  const [isChecking, setIsChecking] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkAuth = async () => {
-      if (!hasAuthToken()) {
-        if (isMounted) {
-          setIsAuthenticated(false);
-          setIsChecking(false);
-        }
-        return;
-      }
-
-      try {
-        await api.get("/auth/me/");
-        if (isMounted) {
-          setIsAuthenticated(true);
-        }
-      } catch {
-        if (isMounted) {
-          setIsAuthenticated(false);
-        }
-      } finally {
-        if (isMounted) {
-          setIsChecking(false);
-        }
-      }
-    };
-
-    checkAuth();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  if (isChecking) {
-    return <div className="auth-loader">Checking session...</div>;
-  }
-
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  return hasAuthToken() ? children : <Navigate to="/login" replace />;
 }
 
 function App() {

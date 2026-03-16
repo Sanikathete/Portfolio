@@ -5,6 +5,7 @@ import hashlib
 import time
 import warnings
 from functools import lru_cache
+from datetime import date
 from datetime import timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -209,6 +210,37 @@ def _fetch_history(symbol: str, period: str, interval: str) -> pd.DataFrame:
     return history_df
 
 
+def _fetch_fast_info(symbol: str) -> Dict:
+    ticker = yf.Ticker(symbol.upper())
+    try:
+        fast_info = getattr(ticker, "fast_info", {}) or {}
+        return dict(fast_info)
+    except Exception:
+        return {}
+
+
+def _extract_live_prices(fast_info: Dict) -> tuple[float | None, float | None]:
+    if not fast_info:
+        return None, None
+
+    last_price = _safe_float(
+        fast_info.get("last_price")
+        or fast_info.get("lastPrice")
+        or fast_info.get("regular_market_price")
+        or fast_info.get("regularMarketPrice"),
+        default=0.0,
+    )
+    previous_close = _safe_float(
+        fast_info.get("previous_close")
+        or fast_info.get("previousClose")
+        or fast_info.get("regular_market_previous_close")
+        or fast_info.get("regularMarketPreviousClose"),
+        default=0.0,
+    )
+
+    return (last_price if last_price > 0 else None, previous_close if previous_close > 0 else None)
+
+
 @lru_cache(maxsize=1)
 def _get_sector_map() -> Dict[str, List[str]]:
     if DEFAULT_STOCKS_CSV.exists():
@@ -319,6 +351,20 @@ def get_stock_data(symbol: str, fallback_sector: str | None = None) -> Dict:
     else:
         current_price = profile["price"]
         previous_close = profile["previous_close"]
+
+    today_str = date.today().isoformat()
+    last_date = history[-1]["date"] if history else ""
+    if today_str and today_str != last_date:
+        fast_info = _fetch_fast_info(normalized_symbol)
+        live_price, live_previous_close = _extract_live_prices(fast_info)
+        if live_price is not None:
+            current_price = live_price
+        if live_previous_close is not None:
+            previous_close = live_previous_close
+
+        history.append({"date": today_str, "price": round(_safe_float(current_price, default=profile["price"]), 2)})
+        if len(history) > 7:
+            history = history[-7:]
 
     discount_percent = 0.0
     if previous_close:
@@ -453,6 +499,17 @@ def get_stock_forecast(symbol: str, lookback_days: int = 30, forecast_days: int 
     if close_series.empty:
         return empty_payload
 
+    price_adjustment = 0.0
+    today_str = date.today().isoformat()
+    last_hist_date = historical[-1]["date"] if historical else ""
+    if today_str and last_hist_date != today_str:
+        last_close_price = _safe_float(historical[-1].get("price") if historical else None, default=profile["price"])
+        fast_info = _fetch_fast_info(normalized_symbol)
+        live_price, _ = _extract_live_prices(fast_info)
+        live_price = live_price if live_price is not None else last_close_price
+        price_adjustment = float(live_price) - float(last_close_price)
+        historical.append({"date": today_str, "price": round(_safe_float(live_price, default=last_close_price), 2)})
+
     linear_values = _build_linear_regression_forecast(close_series, forecast_days)
     arima_values = _build_arima_forecast(close_series, forecast_days)
     if not arima_values:
@@ -469,8 +526,8 @@ def get_stock_forecast(symbol: str, lookback_days: int = 30, forecast_days: int 
     linear_regression_forecast = []
     arima_forecast = []
     for step in range(1, forecast_days + 1):
-        linear_price = linear_values[step - 1]
-        arima_price = arima_values[step - 1]
+        linear_price = linear_values[step - 1] + price_adjustment
+        arima_price = arima_values[step - 1] + price_adjustment
         blended_price = max((0.4 * linear_price) + (0.6 * arima_price), 0.0)
         future_date = (last_date + timedelta(days=step)).strftime("%Y-%m-%d")
 

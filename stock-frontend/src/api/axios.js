@@ -7,8 +7,6 @@ const api = axios.create({
   baseURL: "/api"
 });
 
-export default api;
-
 api.interceptors.request.use((config) => {
   const token = getAuthToken();
   if (token) {

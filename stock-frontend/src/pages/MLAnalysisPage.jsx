@@ -4,6 +4,7 @@ import api from "../api/axios";
 import AppShell from "../components/AppShell";
 import MetricCard from "../components/MetricCard";
 import { useCurrencyPreference } from "../context/CurrencyContext";
+import { ensureArray } from "../lib/api";
 import { createChartOptions } from "../lib/chartSetup";
 import { formatMoney } from "../lib/currency";
 
@@ -20,10 +21,10 @@ function MLAnalysisPage() {
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
-      setError("");
+        setError("");
       try {
         const portfolioResponse = await api.get("/portfolios/");
-        const list = portfolioResponse.data || [];
+        const list = ensureArray(portfolioResponse.data);
         setPortfolios(list);
         const firstId = list[0]?.id ? String(list[0].id) : "";
         setSelectedPortfolioId(firstId);

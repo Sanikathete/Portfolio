@@ -3,6 +3,7 @@ import { Bar, Doughnut, Line } from "react-chartjs-2";
 import api from "../api/axios";
 import AppShell from "../components/AppShell";
 import MetricCard from "../components/MetricCard";
+import { ensureArray } from "../lib/api";
 import { createChartOptions } from "../lib/chartSetup";
 
 const GROWTH_RANGES = ["1W", "1M", "3M", "6M", "1Y", "3Y"];
@@ -20,7 +21,7 @@ function FeaturesPage() {
 
   const loadPortfolios = async () => {
     const response = await api.get("/portfolios/");
-    const list = response.data || [];
+    const list = ensureArray(response.data);
     setPortfolios(list);
     if (!selectedPortfolioId && list[0]?.id) {
       setSelectedPortfolioId(String(list[0].id));
@@ -34,7 +35,7 @@ function FeaturesPage() {
     }
     const [portfolioResponse, analyticsResponse, discountResponse, growthResponse, riskResponse] = await Promise.all([
       api.get(`/portfolios/${portfolioId}/`),
-      api.get("/portfolio/analytics/", { params: { portfolio_id: portfolioId } }),
+      api.get("/portfolio/analytics/", { params: { portfolio_id: portfolioId, horizon: 5 } }),
       api.get(`/portfolios/${portfolioId}/top-discount/`),
       api.get(`/portfolios/${portfolioId}/top-growth/`, { params: { range: rangeCode } }),
       api.get(`/portfolios/${portfolioId}/risk-clusters/`)
@@ -83,6 +84,11 @@ function FeaturesPage() {
   const growthSeries = portfolioAnalytics?.portfolio_growth || [];
 
   const futureSeries = useMemo(() => {
+    const apiForecast = portfolioAnalytics?.portfolio_forecast || [];
+    if (Array.isArray(apiForecast) && apiForecast.length > 0) {
+      return apiForecast.map((item) => ({ date: item.date, value: Number(item.value || 0) }));
+    }
+
     if (growthSeries.length === 0) {
       return [];
     }

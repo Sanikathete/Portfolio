@@ -486,6 +486,17 @@ class PortfolioAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        raw_horizon = request.query_params.get("horizon", 5)
+        raw_lookback = request.query_params.get("lookback", 30)
+        try:
+            horizon = max(1, min(int(raw_horizon), 30))
+        except (TypeError, ValueError):
+            horizon = 5
+        try:
+            lookback = max(7, min(int(raw_lookback), 365))
+        except (TypeError, ValueError):
+            lookback = 30
+
         try:
             portfolio = _get_portfolio_for_request(request, create_if_missing=True)
         except ValueError as exc:
@@ -501,6 +512,7 @@ class PortfolioAnalyticsView(APIView):
                     "average_pe_ratio": 0.0,
                     "best_performing_stock": None,
                     "portfolio_growth": [],
+                    "portfolio_forecast": [],
                     "discount_distribution": [],
                     "opportunity_distribution": [],
                 },
@@ -516,6 +528,8 @@ class PortfolioAnalyticsView(APIView):
         best_stock = None
         best_profit = None
         growth_series = []
+        forecast_totals = {}
+        symbol_forecast_cache = {}
         discount_distribution = []
         opportunity_distribution = []
         market_cache = {}
@@ -568,9 +582,29 @@ class PortfolioAnalyticsView(APIView):
                     growth_series.append({"date": item["date"], "value": 0.0})
                 growth_series[index]["value"] += item["price"] * holding.quantity
 
+            if horizon > 0:
+                forecast_payload = symbol_forecast_cache.get(symbol)
+                if forecast_payload is None:
+                    try:
+                        forecast_payload = get_stock_forecast(symbol, lookback_days=lookback, forecast_days=horizon)
+                    except Exception:
+                        forecast_payload = {"forecast": []}
+                    symbol_forecast_cache[symbol] = forecast_payload
+
+                for item in (forecast_payload.get("forecast") or [])[:horizon]:
+                    date_str = item.get("date")
+                    if not date_str:
+                        continue
+                    price = float(item.get("price") or 0.0)
+                    forecast_totals[date_str] = forecast_totals.get(date_str, 0.0) + (price * holding.quantity)
+
         average_pe_ratio = round(sum(pe_values) / len(pe_values), 2) if pe_values else 0.0
         growth_series = [
             {"date": item["date"], "value": round(item["value"], 2)} for item in growth_series
+        ]
+        portfolio_forecast = [
+            {"date": date_key, "value": round(value, 2)}
+            for date_key, value in sorted(forecast_totals.items(), key=lambda pair: pair[0])
         ]
         if growth_series:
             values = [item["value"] for item in growth_series]
@@ -590,6 +624,7 @@ class PortfolioAnalyticsView(APIView):
                 "average_pe_ratio": average_pe_ratio,
                 "best_performing_stock": best_stock,
                 "portfolio_growth": growth_series,
+                "portfolio_forecast": portfolio_forecast,
                 "discount_distribution": discount_distribution,
                 "opportunity_distribution": opportunity_distribution,
             },

@@ -7,6 +7,7 @@ import MetricCard from "../components/MetricCard";
 import PortfolioTable from "../components/PortfolioTable";
 import SearchPicker from "../components/SearchPicker";
 import { useCurrencyPreference } from "../context/CurrencyContext";
+import { ensureArray } from "../lib/api";
 import { createChartOptions } from "../lib/chartSetup";
 import { formatMoney } from "../lib/currency";
 
@@ -80,14 +81,14 @@ function Dashboard() {
 
   const loadPortfolios = async () => {
     const response = await api.get("/portfolios/");
-    const list = response.data || [];
+    const list = ensureArray(response.data);
     setPortfolios(list);
     return list;
   };
 
   const loadCountries = async () => {
     const response = await api.get("/countries/");
-    const list = response.data || [];
+    const list = ensureArray(response.data);
     setCountries(list);
     return list;
   };
@@ -160,7 +161,7 @@ function Dashboard() {
     const loadSectors = async () => {
       try {
         const response = await api.get(`/sectors/${selectedCountryId}/`);
-        const list = response.data || [];
+        const list = ensureArray(response.data);
         setSectors(list);
         setSelectedSectorId((current) =>
           list.some((item) => String(item.id) === String(current)) ? current : String(list[0]?.id || "")
@@ -184,7 +185,7 @@ function Dashboard() {
       try {
         const sectorName = encodeURIComponent(selectedSector.name);
         const response = await api.get(`/stocks/by-sector/${sectorName}/`);
-        const list = response.data || [];
+        const list = ensureArray(response.data);
         setSectorStocks(list);
         setSelectedTicker((current) =>
           list.some((item) => (item.symbol || item.ticker) === current) ? current : ""
