@@ -1,0 +1,7 @@
+id,name,symbol,price,quantity,sector_id,total_value
+6,"Salesforce, Inc.",CRM,195.38,2,1,390.76
+7,SLB Limited,SLB,46.63,1,3,46.63
+11,Ecolab Inc.,ECL,256.48,1,4,256.48
+5,Adobe Inc.,ADBE,248.15,1,1,248.15
+1,Apple Inc.,AAPL,247.99,1,8,247.99
+24,Alphabet Inc.,GOOGL,301.0,1,15,301.0

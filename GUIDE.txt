@@ -1,0 +1,92 @@
+PROJECT START GUIDE (Portfolio App)
+
+Project root:
+e:\Bizmetric\Machine Learn\Portfolio
+
+==================================================
+1) OPEN TERMINAL 1 (BACKEND)
+==================================================
+cd "e:\Bizmetric\Machine Learn\Portfolio\backend"
+
+# activate virtual environment
+..\ .venv\Scripts\Activate.ps1
+
+# run backend
+python manage.py runserver localhost:8000
+
+Backend should be available at:
+http://localhost:8000
+
+==================================================
+2) OPEN TERMINAL 2 (FRONTEND)
+==================================================
+cd "e:\Bizmetric\Machine Learn\Portfolio\stock-frontend"
+
+# first time only
+npm install
+
+# start frontend
+npm run dev
+
+Frontend URL (open this in browser):
+http://localhost:5173
+
+Important:
+Use localhost for both frontend and backend.
+
+==================================================
+3) LOGIN FLOW
+==================================================
+Open:
+http://localhost:5173
+
+Login with your Django user credentials.
+
+Auth is token-based.
+The frontend stores the auth token in localStorage and sends it to `/api/auth/*` endpoints.
+If you clear browser storage, you will need to log in again.
+
+==================================================
+4) IF YOU RESTART PC / CLOSE VS CODE
+==================================================
+Every time, do both:
+- Start backend (Terminal 1)
+- Start frontend (Terminal 2)
+
+Do not close those terminals while using the app.
+
+==================================================
+5) QUICK TROUBLESHOOTING
+==================================================
+A) "Failed to load stocks for selected sector"
+- Backend probably not running, or auth token is missing/expired.
+- Check backend terminal is running.
+- Refresh page and login again.
+
+B) Frontend port already in use
+- Run:
+  npm run dev -- --port 5174
+- Then open:
+  http://localhost:5174
+
+C) Backend port already in use
+- Use:
+  python manage.py runserver 127.0.0.1:8001
+- Then update frontend API base URL accordingly (if needed).
+
+==================================================
+6) OPTIONAL: CREATE NEW DJANGO USER (if needed)
+==================================================
+In backend folder with venv active:
+python manage.py createsuperuser
+
+==================================================
+7) REFRESH STOCK CSV FROM YFINANCE
+==================================================
+In backend folder with venv active:
+python manage.py build_stock_universe
+
+This builds:
+backend/portfolio/data/stocks_by_sector.csv
+
+The API uses this CSV to list sectors and stocks.
