@@ -116,12 +116,34 @@ function Dashboard() {
       setError("");
       setIsLoading(true);
       try {
-        const [portfolioList, countryList] = await Promise.all([loadPortfolios(), loadCountries()]);
-        const initialId = id || portfolioList[0]?.id ? String(id || portfolioList[0]?.id || "") : "";
-        if (initialId) {
-          setSelectedPortfolioId(initialId);
-          await loadWorkspace(initialId);
+        let portfolioList = [];
+        let countryList = [];
+
+        try {
+          portfolioList = await loadPortfolios();
+        } catch (err) {
+          setError(err?.response?.data?.detail || "Failed to load portfolios.");
         }
+
+        try {
+          countryList = await loadCountries();
+        } catch (err) {
+          setError((current) => current || err?.response?.data?.detail || "Failed to load countries.");
+        }
+
+        const requestedId = id ? String(id) : "";
+        const requestedExists = requestedId
+          ? portfolioList.some((item) => String(item.id) === requestedId)
+          : false;
+        const fallbackId = portfolioList[0]?.id ? String(portfolioList[0].id) : "";
+        const initialId = requestedExists ? requestedId : fallbackId;
+
+        if (requestedId && !requestedExists) {
+          navigate("/dashboard", { replace: true });
+        }
+
+        setSelectedPortfolioId(initialId);
+
         if (countryList[0] && countryList[0].id !== undefined && countryList[0].id !== null) {
           setSelectedCountryId(String(countryList[0].id));
         }
