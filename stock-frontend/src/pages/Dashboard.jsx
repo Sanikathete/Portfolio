@@ -122,7 +122,7 @@ function Dashboard() {
           setSelectedPortfolioId(initialId);
           await loadWorkspace(initialId);
         }
-        if (countryList[0]?.id) {
+        if (countryList[0] && countryList[0].id !== undefined && countryList[0].id !== null) {
           setSelectedCountryId(String(countryList[0].id));
         }
       } catch (err) {

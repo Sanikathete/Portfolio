@@ -22,3 +22,5 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+.env
+backend/portfolio_4_stocks.csv

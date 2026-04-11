@@ -28,6 +28,24 @@ BAC,Bank of America Corporation,Financial Services,Banks - Diversified,NYQ,Unite
 GS,"Goldman Sachs Group, Inc. (The)",Financial Services,Capital Markets,NYQ,United States
 JPM,JP Morgan Chase & Co.,Financial Services,Banks - Diversified,NYQ,United States
 MS,Morgan Stanley,Financial Services,Capital Markets,NYQ,United States
+RELIANCE.NS,Reliance Industries Limited,Energy,Oil & Gas Refining & Marketing,NSE,India
+ONGC.NS,Oil and Natural Gas Corporation Limited,Energy,Oil & Gas E&P,NSE,India
+HDFCBANK.NS,HDFC Bank Limited,Financial Services,Banks - Regional,NSE,India
+ICICIBANK.NS,ICICI Bank Limited,Financial Services,Banks - Regional,NSE,India
+SBIN.NS,State Bank of India,Financial Services,Banks - Regional,NSE,India
+TCS.NS,Tata Consultancy Services Limited,Technology,Information Technology Services,NSE,India
+INFY.NS,Infosys Limited,Technology,Information Technology Services,NSE,India
+WIPRO.NS,Wipro Limited,Technology,Information Technology Services,NSE,India
+BHARTIARTL.NS,Bharti Airtel Limited,Communication Services,Telecom Services,NSE,India
+HINDUNILVR.NS,Hindustan Unilever Limited,Consumer Defensive,Household & Personal Products,NSE,India
+ITC.NS,ITC Limited,Consumer Defensive,Tobacco,NSE,India
+SUNPHARMA.NS,Sun Pharmaceutical Industries Limited,Healthcare,Drug Manufacturers - Specialty & Generic,NSE,India
+DRREDDY.NS,Dr. Reddy's Laboratories Limited,Healthcare,Drug Manufacturers - Specialty & Generic,NSE,India
+MARUTI.NS,Maruti Suzuki India Limited,Consumer Cyclical,Auto Manufacturers,NSE,India
+TATAMOTORS.NS,Tata Motors Limited,Consumer Cyclical,Auto Manufacturers,NSE,India
+LT.NS,Larsen & Toubro Limited,Industrials,Engineering & Construction,NSE,India
+ULTRACEMCO.NS,UltraTech Cement Limited,Basic Materials,Building Materials,NSE,India
+NTPC.NS,NTPC Limited,Utilities,Utilities - Regulated Electric,NSE,India
 WFC,Wells Fargo & Company,Financial Services,Banks - Diversified,NYQ,United States
 ABBV,AbbVie Inc.,Healthcare,Drug Manufacturers - General,NYQ,United States
 JNJ,Johnson & Johnson,Healthcare,Drug Manufacturers - General,NYQ,United States

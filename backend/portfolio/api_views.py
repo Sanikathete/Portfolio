@@ -21,6 +21,9 @@ COUNTRY_ALIASES = {
     "uk": "United Kingdom",
     "u.k.": "United Kingdom",
     "great britain": "United Kingdom",
+    "in": "India",
+    "india": "India",
+    "bharat": "India",
 }
 
 
@@ -33,6 +36,13 @@ def _normalize_country_name(name):
 
 def _normalize_sector_name(name):
     value = str(name or "").strip()
+    if not value:
+        return "Unknown"
+
+    value = value.replace("_", " ")
+    value = " ".join(value.split())
+    if value.isupper():
+        value = value.title()
     return value or "Unknown"
 
 
@@ -43,9 +53,25 @@ def _normalize_stock_name(name, fallback_symbol):
     return value
 
 
-@lru_cache(maxsize=1)
-def _catalog_payload():
-    countries = {}
+def _catalog_signature():
+    csv_mtime_ns = None
+    try:
+        if CATALOG_CSV_PATH.exists():
+            csv_mtime_ns = CATALOG_CSV_PATH.stat().st_mtime_ns
+    except OSError:
+        csv_mtime_ns = None
+
+    return (
+        csv_mtime_ns,
+        Country.objects.count(),
+        Sector.objects.count(),
+        Stock.objects.count(),
+    )
+
+
+@lru_cache(maxsize=8)
+def _catalog_payload_cached(signature):
+    countries = set()
     sectors = {}
     stocks = {}
 
@@ -58,83 +84,153 @@ def _catalog_payload():
             symbol = str(row.get("symbol", "")).strip().upper()
             stock_name = _normalize_stock_name(row.get("company_name", ""), symbol)
 
-            if country_name not in countries:
-                countries[country_name] = {
-                    "id": len(countries) + 1,
-                    "name": country_name,
-                }
+            if not country_name or not symbol or not sector_name:
+                continue
 
-            sector_key = (countries[country_name]["id"], sector_name.lower())
-            if sector_key not in sectors:
-                sectors[sector_key] = {
-                    "id": len(sectors) + 1,
-                    "name": sector_name,
-                    "country_id": countries[country_name]["id"],
-                }
-
-            stock_key = (sectors[sector_key]["id"], symbol)
-            if stock_key not in stocks:
-                stocks[stock_key] = {
-                    "id": len(stocks) + 1,
+            countries.add(country_name)
+            sector_key = (country_name, sector_name.lower())
+            sectors.setdefault(sector_key, sector_name)
+            stock_key = (country_name, sector_name.lower(), symbol)
+            stocks.setdefault(
+                stock_key,
+                {
                     "name": stock_name,
                     "symbol": symbol,
-                    "sector_id": sectors[sector_key]["id"],
-                    "country_id": countries[country_name]["id"],
-                }
+                },
+            )
 
     for item in Country.objects.all().order_by("name"):
         country_name = _normalize_country_name(item.name)
-        if country_name not in countries:
-            countries[country_name] = {
-                "id": len(countries) + 1,
-                "name": country_name,
-            }
+        if country_name:
+            countries.add(country_name)
 
     for item in Sector.objects.select_related("country").all().order_by("name"):
         country_name = _normalize_country_name(getattr(item.country, "name", "Unknown"))
-        if country_name not in countries:
-            countries[country_name] = {
-                "id": len(countries) + 1,
-                "name": country_name,
-            }
-        sector_key = (countries[country_name]["id"], item.name.lower())
-        if sector_key not in sectors:
-            sectors[sector_key] = {
-                "id": len(sectors) + 1,
-                "name": item.name,
-                "country_id": countries[country_name]["id"],
-            }
+        if not country_name:
+            continue
+        countries.add(country_name)
+        sector_name = _normalize_sector_name(item.name)
+        sector_key = (country_name, sector_name.lower())
+        sectors.setdefault(sector_key, sector_name)
 
     for item in Stock.objects.select_related("country", "sector").all().order_by("name"):
         country_name = _normalize_country_name(
             getattr(getattr(item, "country", None), "name", None) or "United States"
         )
-        if country_name not in countries:
-            countries[country_name] = {
-                "id": len(countries) + 1,
-                "name": country_name,
-            }
-        sector_name = _normalize_sector_name(getattr(getattr(item, "sector", None), "name", None))
-        sector_key = (countries[country_name]["id"], sector_name.lower())
-        if sector_key not in sectors:
-            sectors[sector_key] = {
-                "id": len(sectors) + 1,
-                "name": sector_name,
-                "country_id": countries[country_name]["id"],
-            }
-        stock_key = (sectors[sector_key]["id"], item.symbol.upper())
-        if stock_key not in stocks:
-            stocks[stock_key] = {
-                "id": len(stocks) + 1,
-                "name": _normalize_stock_name(item.company_name or item.name, item.symbol),
-                "symbol": item.symbol.upper(),
-                "sector_id": sectors[sector_key]["id"],
-                "country_id": countries[country_name]["id"],
-            }
+        if not country_name:
+            continue
 
-    country_list = sorted(countries.values(), key=lambda item: item["name"])
-    sector_list = sorted(sectors.values(), key=lambda item: (item["country_id"], item["name"].lower()))
-    stock_list = sorted(stocks.values(), key=lambda item: (item["sector_id"], item["symbol"]))
+        symbol = str(item.symbol or "").strip().upper()
+        if not symbol:
+            continue
+
+        countries.add(country_name)
+        sector_name = _normalize_sector_name(getattr(getattr(item, "sector", None), "name", None))
+        sector_key = (country_name, sector_name.lower())
+        sectors.setdefault(sector_key, sector_name)
+        stock_key = (country_name, sector_name.lower(), symbol)
+        stocks.setdefault(
+            stock_key,
+            {
+                "name": _normalize_stock_name(item.company_name or item.name, symbol),
+                "symbol": symbol,
+            },
+        )
+
+    global_name = "Global"
+    # Reserve an explicit "Global" option so the UI can show an "all markets" view,
+    # even when there is no corresponding Country row in the database.
+    country_names = sorted(name for name in countries if name and name != global_name)
+    country_ids = {global_name: 0, **{name: idx + 1 for idx, name in enumerate(country_names)}}
+
+    country_list = [{"id": 0, "name": global_name}] + [
+        {"id": country_ids[name], "name": name} for name in country_names
+    ]
+
+    global_sector_names = {}
+    for (country_name, sector_key_lower), sector_name in sectors.items():
+        if not sector_name:
+            continue
+        global_sector_names.setdefault(sector_key_lower, sector_name)
+
+    sector_records = []
+    for (country_name, sector_key_lower), sector_name in sectors.items():
+        if (
+            not sector_name
+            or country_name not in country_ids
+            or country_name == global_name
+        ):
+            continue
+        sector_records.append(
+            {
+                "country_id": country_ids[country_name],
+                "name": sector_name,
+                "sector_key": sector_key_lower,
+                "country_key": country_name,
+            }
+        )
+
+    for sector_key_lower, sector_name in global_sector_names.items():
+        sector_records.append(
+            {
+                "country_id": 0,
+                "name": sector_name,
+                "sector_key": sector_key_lower,
+                "country_key": global_name,
+            }
+        )
+
+    sector_records.sort(key=lambda item: (item["country_id"], item["name"].lower()))
+    sector_list = []
+    sector_id_by_key = {}
+    for idx, record in enumerate(sector_records, start=1):
+        sector_id_by_key[(record["country_key"], record["sector_key"])] = idx
+        sector_list.append(
+            {
+                "id": idx,
+                "name": record["name"],
+                "country_id": record["country_id"],
+            }
+        )
+
+    stock_records = []
+    for (country_name, sector_key_lower, symbol), stock in stocks.items():
+        if country_name == global_name:
+            continue
+        sector_id = sector_id_by_key.get((country_name, sector_key_lower))
+        global_sector_id = sector_id_by_key.get((global_name, sector_key_lower))
+        if sector_id:
+            stock_records.append(
+                {
+                    "name": stock["name"],
+                    "symbol": symbol,
+                    "sector_id": sector_id,
+                    "country_id": country_ids.get(country_name, 0),
+                }
+            )
+        if global_sector_id:
+            stock_records.append(
+                {
+                    "name": stock["name"],
+                    "symbol": symbol,
+                    "sector_id": global_sector_id,
+                    "country_id": 0,
+                }
+            )
+
+    stock_records.sort(key=lambda item: (item["sector_id"], item["symbol"]))
+    stock_list = []
+    for idx, record in enumerate(stock_records, start=1):
+        stock_list.append(
+            {
+                "id": idx,
+                "name": record["name"],
+                "symbol": record["symbol"],
+                "sector_id": record["sector_id"],
+                "country_id": record["country_id"],
+            }
+        )
+
     return {
         "countries": country_list,
         "sectors": sector_list,
@@ -142,12 +238,18 @@ def _catalog_payload():
     }
 
 
+def _catalog_payload():
+    return _catalog_payload_cached(_catalog_signature())
+
+
 class CountryListAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
         payload = _catalog_payload()["countries"]
-        return Response(payload, status=status.HTTP_200_OK)
+        response = Response(payload, status=status.HTTP_200_OK)
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class SectorByCountryAPIView(APIView):
@@ -159,7 +261,9 @@ class SectorByCountryAPIView(APIView):
             for item in _catalog_payload()["sectors"]
             if int(item["country_id"]) == int(country_id)
         ]
-        return Response(payload, status=status.HTTP_200_OK)
+        response = Response(payload, status=status.HTTP_200_OK)
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class StockBySectorAPIView(APIView):
@@ -171,7 +275,9 @@ class StockBySectorAPIView(APIView):
             for item in _catalog_payload()["stocks"]
             if int(item["sector_id"]) == int(sector_id)
         ]
-        return Response(payload, status=status.HTTP_200_OK)
+        response = Response(payload, status=status.HTTP_200_OK)
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class AddStockAPIView(APIView):

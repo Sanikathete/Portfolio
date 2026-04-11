@@ -26,17 +26,17 @@ except Exception:
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DEFAULT_STOCKS_CSV = DATA_DIR / "stocks_by_sector.csv"
 FALLBACK_SECTOR_MAP = {
-    "TECHNOLOGY": ["AAPL", "MSFT", "NVDA", "ORCL", "ADBE", "CRM"],
-    "HEALTHCARE": ["JNJ", "PFE", "UNH", "ABBV", "MRK"],
-    "FINANCIAL_SERVICES": ["JPM", "BAC", "WFC", "GS", "MS"],
-    "CONSUMER_CYCLICAL": ["AMZN", "TSLA", "HD", "NKE", "SBUX"],
-    "CONSUMER_DEFENSIVE": ["PG", "KO", "PEP", "WMT", "COST"],
-    "ENERGY": ["XOM", "CVX", "COP", "SLB", "EOG"],
-    "INDUSTRIALS": ["GE", "CAT", "HON", "UPS", "DE"],
-    "COMMUNICATION_SERVICES": ["GOOGL", "META", "NFLX", "DIS", "TMUS"],
-    "UTILITIES": ["NEE", "DUK", "SO", "AEP", "EXC"],
+    "TECHNOLOGY": ["AAPL", "MSFT", "NVDA", "ORCL", "ADBE", "CRM", "TCS.NS", "INFY.NS", "WIPRO.NS"],
+    "HEALTHCARE": ["JNJ", "PFE", "UNH", "ABBV", "MRK", "SUNPHARMA.NS", "DRREDDY.NS"],
+    "FINANCIAL_SERVICES": ["JPM", "BAC", "WFC", "GS", "MS", "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS"],
+    "CONSUMER_CYCLICAL": ["AMZN", "TSLA", "HD", "NKE", "SBUX", "MARUTI.NS", "TATAMOTORS.NS"],
+    "CONSUMER_DEFENSIVE": ["PG", "KO", "PEP", "WMT", "COST", "HINDUNILVR.NS", "ITC.NS"],
+    "ENERGY": ["XOM", "CVX", "COP", "SLB", "EOG", "RELIANCE.NS", "ONGC.NS"],
+    "INDUSTRIALS": ["GE", "CAT", "HON", "UPS", "DE", "LT.NS"],
+    "COMMUNICATION_SERVICES": ["GOOGL", "META", "NFLX", "DIS", "TMUS", "BHARTIARTL.NS"],
+    "UTILITIES": ["NEE", "DUK", "SO", "AEP", "EXC", "NTPC.NS"],
     "REAL_ESTATE": ["PLD", "AMT", "EQIX", "CCI", "SPG"],
-    "BASIC_MATERIALS": ["LIN", "APD", "ECL", "NEM", "FCX"],
+    "BASIC_MATERIALS": ["LIN", "APD", "ECL", "NEM", "FCX", "ULTRACEMCO.NS"],
 }
 SPECIAL_ASSETS = {
     "gold": {"symbol": "GC=F", "label": "Gold", "asset_type": "commodity"},
@@ -274,6 +274,11 @@ def build_stock_universe_csv() -> Dict[str, str | int]:
             except Exception:
                 info = {}
 
+            inferred_country = info.get("country") or ""
+            normalized_symbol = str(symbol or "").strip().upper()
+            if not inferred_country and (normalized_symbol.endswith(".NS") or normalized_symbol.endswith(".BO")):
+                inferred_country = "India"
+
             rows.append(
                 {
                     "symbol": symbol,
@@ -281,7 +286,7 @@ def build_stock_universe_csv() -> Dict[str, str | int]:
                     "sector": info.get("sector") or fallback_sector.replace("_", " "),
                     "industry": info.get("industry") or "",
                     "exchange": info.get("exchange") or "",
-                    "country": info.get("country") or "",
+                    "country": inferred_country,
                 }
             )
 

@@ -659,6 +659,14 @@ class StockUniverseRebuildView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        # Ensure the public catalog endpoints reflect the latest CSV immediately.
+        try:
+            from portfolio.api_views import _catalog_payload_cached
+
+            _catalog_payload_cached.cache_clear()
+        except Exception:
+            pass
+
         return Response(
             {
                 "detail": "Stock universe CSV rebuilt successfully.",

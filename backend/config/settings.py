@@ -4,9 +4,9 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-change-me")
-DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY") or os.getenv("SECRET_KEY") or "django-insecure-change-me"
+DEBUG = (os.getenv("DJANGO_DEBUG") or os.getenv("DEBUG") or "1") == "1"
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost")).split(",")
 
 
 INSTALLED_APPS = [
